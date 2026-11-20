@@ -134,6 +134,33 @@ enum PgSubcommands {
         #[arg(short, long)]
         dir: Option<PathBuf>,
     },
+
+    /// Manage PostgreSQL extensions (list or install third-party zips)
+    #[command(alias = "extensions")]
+    Ext {
+        #[command(subcommand)]
+        subcmd: ExtSubcommands,
+    },
+}
+
+#[derive(Subcommand)]
+enum ExtSubcommands {
+    /// List all available built-in and installed extensions
+    List {
+        /// Target installation directory
+        #[arg(short, long)]
+        dir: Option<PathBuf>,
+    },
+
+    /// Install a third-party extension zip (e.g. pgvector) into user directory
+    Install {
+        /// Path to extension .zip archive
+        file: PathBuf,
+
+        /// Target installation directory
+        #[arg(short, long)]
+        dir: Option<PathBuf>,
+    },
 }
 
 fn resolve_dir(dir: Option<PathBuf>) -> PathBuf {
@@ -206,6 +233,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     Err(e) => eprintln!("{} Failed to update User PATH: {}", "[!]".red(), e),
                 }
             }
+            PgSubcommands::Ext { subcmd } => match subcmd {
+                ExtSubcommands::List { dir } => {
+                    let install_dir = resolve_dir(dir);
+                    postgres::list_extensions(&install_dir)?;
+                }
+                ExtSubcommands::Install { file, dir } => {
+                    let install_dir = resolve_dir(dir);
+                    postgres::install_extension_zip(&install_dir, &file)?;
+                }
+            },
         },
         Commands::Info => {
             println!("{}", "mini-dbs System Environment:".cyan().bold());

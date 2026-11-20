@@ -395,3 +395,87 @@ fn chrono_like_now() -> String {
     let secs = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_secs();
     format!("timestamp-{}", secs)
 }
+pub fn list_extensions(install_dir: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    let ext_dir = install_dir.join("share").join("extension");
+    if !ext_dir.exists() {
+        return Err(format!("Extension directory not found at {}. Have you run 'setup'?", ext_dir.display()).into());
+    }
+
+    println!("\n{}", "--- Available PostgreSQL Extensions (Zero-Admin) ---".cyan().bold());
+    println!("Extension Directory: {}\n", ext_dir.display());
+
+    let mut extensions = Vec::new();
+    for entry in fs::read_dir(&ext_dir)? {
+        let entry = entry?;
+        let path = entry.path();
+        if path.extension().map_or(false, |ext| ext == "control") {
+            if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
+                let content = fs::read_to_string(&path).unwrap_or_default();
+                let comment = content.lines()
+                    .find(|line| line.trim().starts_with("comment"))
+                    .and_then(|line| line.split('=').nth(1))
+                    .map(|c| c.trim().trim_matches('\''))
+                    .unwrap_or("No description available");
+                extensions.push((stem.to_string(), comment.to_string()));
+            }
+        }
+    }
+
+    extensions.sort_by(|a, b| a.0.cmp(&b.0));
+
+    for (name, desc) in &extensions {
+        println!("  • {:<24} {}", name.green().bold(), desc.bright_black());
+    }
+
+    println!("\nTotal available extensions: {}", extensions.len().to_string().cyan());
+    println!("To enable any extension in your database, connect with psql and run:");
+    println!("  {}", "CREATE EXTENSION <extension_name>;".yellow());
+    Ok(())
+}
+
+pub fn install_extension_zip(install_dir: &Path, zip_file: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    let file = fs::File::open(zip_file)?;
+    let mut archive = zip::ZipArchive::new(std::io::BufReader::new(file))?;
+
+    let lib_dir = install_dir.join("lib");
+    let ext_dir = install_dir.join("share").join("extension");
+    let bin_dir = install_dir.join("bin");
+
+    fs::create_dir_all(&lib_dir)?;
+    fs::create_dir_all(&ext_dir)?;
+
+    println!("{} Installing extension from {}...", "[*]".cyan(), zip_file.display());
+    let mut installed_files = 0;
+
+    for i in 0..archive.len() {
+        let mut entry = archive.by_index(i)?;
+        let name = entry.name().to_string();
+
+        if entry.is_dir() {
+            continue;
+        }
+
+        let file_name = Path::new(&name).file_name().and_then(|f| f.to_str()).unwrap_or("");
+        if file_name.is_empty() {
+            continue;
+        }
+
+        let target_path = if file_name.ends_with(".dll") {
+            lib_dir.join(file_name)
+        } else if file_name.ends_with(".control") || file_name.ends_with(".sql") {
+            ext_dir.join(file_name)
+        } else {
+            bin_dir.join(file_name)
+        };
+
+        let mut out = fs::File::create(&target_path)?;
+        std::io::copy(&mut entry, &mut out)?;
+        println!("  + Extracted: {}", target_path.display());
+        installed_files += 1;
+    }
+
+    println!("{} Extension installed successfully ({} files placed into user directory).", "[✓]".green(), installed_files);
+    println!("You can now enable it via psql:");
+    println!("  {}", "CREATE EXTENSION <extension_name>;".yellow());
+    Ok(())
+}

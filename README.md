@@ -168,6 +168,48 @@ mini-dbs/
 
 ---
 
+## 🧩 Extension Management (pgvector, pgcrypto, etc.)
+
+One of the greatest headaches with standard PostgreSQL on Windows is installing extensions. Because standard installations live in `C:\Program Files`, Windows UAC blocks you from adding `.dll` or `.control` files without administrator rights.
+
+**With `mini-dbs`, you have full write permissions to your database directory with zero administrator rights required.**
+
+### 1. Built-in Extensions (60+ Pre-Installed)
+The official binaries archive comes pre-packaged with over 60 contrib extensions:
+- **Crypto & Security**: `pgcrypto`, `uuid-ossp`, `sslinfo`
+- **Text & Search**: `pg_trgm`, `citext`, `fuzzystrmatch`, `unaccent`
+- **Data Types & Analytics**: `hstore`, `ltree`, `cube`, `bloom`, `btree_gist`, `pg_stat_statements`
+- **Federation**: `postgres_fdw`, `dblink`
+
+To enable any built-in extension, open `psql` and run:
+```sql
+CREATE EXTENSION pgcrypto;
+CREATE EXTENSION "uuid-ossp";
+CREATE EXTENSION pg_trgm;
+```
+
+To list all available extensions on your machine:
+```powershell
+mini-dbs pg ext list
+```
+
+### 2. Third-Party Extensions (e.g., `pgvector`)
+For extensions that do not ship with PostgreSQL by default:
+1. Download a precompiled Windows binary `.zip` for your PostgreSQL major version (for example, community builds from `andreiramani/pgvector_pgsql_windows` or `portalcorp/pgvector_compiled`).
+2. Run the automated installer:
+   ```powershell
+   mini-dbs pg ext install .\path\to\vector.v0.8.0-pg17.zip
+   ```
+   Or manually drop:
+   - `vector.dll` into `<install_dir>\lib\`
+   - `vector.control` and `vector--*.sql` into `<install_dir>\share\extension\`
+3. Connect with `psql` and enable:
+   ```sql
+   CREATE EXTENSION vector;
+   ```
+
+---
+
 ## 🔒 Security & Best Practices
 
 - **Zero Privilege Escalation**: PostgreSQL deliberately discourages running as root/Administrator. Running inside user space is inherently more secure.

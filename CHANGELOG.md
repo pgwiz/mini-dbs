@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Automation Scripts**:
   - PowerShell zero-dependency automation: [`install.ps1`](file:///e:/Backup/pgwiz/pg-win-cli/scripts/postgres/install.ps1), [`pg-start.ps1`](file:///e:/Backup/pgwiz/pg-win-cli/scripts/postgres/pg-start.ps1), [`pg-stop.ps1`](file:///e:/Backup/pgwiz/pg-win-cli/scripts/postgres/pg-stop.ps1), [`pg-status.ps1`](file:///e:/Backup/pgwiz/pg-win-cli/scripts/postgres/pg-status.ps1), [`pg-cli.ps1`](file:///e:/Backup/pgwiz/pg-win-cli/scripts/postgres/pg-cli.ps1), [`pg-env.ps1`](file:///e:/Backup/pgwiz/pg-win-cli/scripts/postgres/pg-env.ps1).
   - Double-click Windows Batch launcher shortcuts: `pg-start.bat`, `pg-stop.bat`, `pg-status.bat`, `pg-cli.bat`.
-- **System Environment**:
+- **System Environment & Extensions**:
   - Safe User PATH registration without elevation via `winreg`.
   - Automatic `UTF-8` code page enforcement (`chcp 65001`).
+  - Extension management commands: `mini-dbs pg ext list` to inspect 60+ pre-packaged contrib extensions and `mini-dbs pg ext install <zip>` to automatically install third-party extensions like `pgvector` into user directories without administrator rights.

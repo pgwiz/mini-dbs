@@ -17,10 +17,11 @@ pub fn run_interactive_menu() -> Result<(), Box<dyn std::error::Error>> {
         println!("  {} Open psql Interactive CLI Shell", "[5]".green().bold());
         println!("  {} Add PostgreSQL to User PATH (Zero Elevation)", "[6]".green().bold());
         println!("  {} View Shell Environment Configuration (ps1/cmd)", "[7]".green().bold());
-        println!("  {} System Diagnostics & Active Ports", "[8]".green().bold());
+        println!("  {} Manage Extensions (List available or Install .zip)", "[8]".green().bold());
+        println!("  {} System Diagnostics & Active Ports", "[9]".green().bold());
         println!("  {} Exit", "[0]".yellow());
         println!("{}", "----------------------------------------------------------".bright_black());
-        print!("Select an option [0-8]: ");
+        print!("Select an option [0-9]: ");
         io::stdout().flush()?;
 
         let mut choice = String::new();
@@ -35,12 +36,13 @@ pub fn run_interactive_menu() -> Result<(), Box<dyn std::error::Error>> {
             "5" => interactive_psql()?,
             "6" => interactive_add_path()?,
             "7" => interactive_env()?,
-            "8" => interactive_diagnostics()?,
+            "8" => interactive_extensions()?,
+            "9" => interactive_diagnostics()?,
             "0" | "q" | "exit" => {
                 println!("Goodbye!");
                 break;
             }
-            _ => println!("{} Invalid option, please enter a number 0-8.", "[!]".red()),
+            _ => println!("{} Invalid option, please enter a number 0-9.", "[!]".red()),
         }
     }
     Ok(())
@@ -200,4 +202,23 @@ fn prompt_install_dir() -> Result<PathBuf, io::Error> {
         _ => default_dir,
     };
     Ok(path)
+}
+fn interactive_extensions() -> Result<(), Box<dyn std::error::Error>> {
+    let loc = prompt_install_dir()?;
+    println!("\nExtension Management:");
+    println!("  [1] List all available extensions");
+    println!("  [2] Install third-party extension from .zip file");
+    let c = prompt("Choose [1-2]", Some("1"))?;
+    if c == "2" {
+        let zip_str = prompt("Enter path to extension .zip archive", None)?;
+        let zip_path = PathBuf::from(zip_str);
+        if !zip_path.exists() {
+            println!("{} File not found at {}", "[!]".red(), zip_path.display());
+            return Ok(());
+        }
+        postgres::install_extension_zip(&loc, &zip_path)?;
+    } else {
+        postgres::list_extensions(&loc)?;
+    }
+    Ok(())
 }
