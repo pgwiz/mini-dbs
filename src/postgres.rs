@@ -183,7 +183,15 @@ pub fn run_start(install_dir: &Path) -> Result<(), Box<dyn std::error::Error>> {
     }
 
     println!("{} Starting PostgreSQL server...", "[*]".cyan());
-    let status = Command::new(&pg_ctl)
+    let mut cmd = Command::new(&pg_ctl);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        // DETACHED_PROCESS (0x08) | CREATE_NEW_PROCESS_GROUP (0x200)
+        cmd.creation_flags(0x00000008 | 0x00000200);
+    }
+
+    let status = cmd
         .arg("-D").arg(&data_dir)
         .arg("-l").arg(&log_file)
         .arg("start")
@@ -234,7 +242,14 @@ pub fn run_restart(install_dir: &Path) -> Result<(), Box<dyn std::error::Error>>
     }
 
     println!("{} Restarting PostgreSQL server...", "[*]".cyan());
-    let status = Command::new(&pg_ctl)
+    let mut cmd = Command::new(&pg_ctl);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x00000008 | 0x00000200);
+    }
+
+    let status = cmd
         .arg("-D").arg(&data_dir)
         .arg("-l").arg(&log_file)
         .arg("-m").arg("fast")
