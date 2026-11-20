@@ -1,6 +1,7 @@
 mod config;
 mod downloader;
 mod menu;
+mod monitor;
 mod postgres;
 mod win_utils;
 
@@ -29,6 +30,20 @@ struct Cli {
 enum Commands {
     /// Launch interactive terminal wizard & manager menu
     Menu,
+
+    /// View running database processes and real-time memory usage (Working Set RAM)
+    Ps,
+
+    /// Run memory-efficient live background activity supervisor & process monitor
+    #[command(alias = "monitor")]
+    Top {
+        /// Refresh interval in seconds (default: 2)
+        #[arg(short, long, default_value_t = 2)]
+        interval: u64,
+    },
+
+    /// Stop all active database instances cleanly
+    StopAll,
 
     /// Manage PostgreSQL database instances
     #[command(alias = "pg")]
@@ -177,6 +192,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     match cli.command.unwrap() {
         Commands::Menu => {
             menu::run_interactive_menu()?;
+        }
+        Commands::Ps => {
+            monitor::print_process_table();
+        }
+        Commands::Top { interval } => {
+            monitor::run_live_monitor(interval)?;
+        }
+        Commands::StopAll => {
+            monitor::stop_all_processes()?;
         }
         Commands::Postgres(pg) => match pg.subcmd {
             PgSubcommands::Setup {

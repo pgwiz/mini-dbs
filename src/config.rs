@@ -31,3 +31,53 @@ impl PgConfig {
         Ok(())
     }
 }
+
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
+pub struct InstanceRegistry {
+    pub instances: Vec<String>,
+}
+
+impl InstanceRegistry {
+    pub fn registry_path() -> PathBuf {
+        dirs::data_local_dir()
+            .unwrap_or_else(|| dirs::home_dir().unwrap_or_else(|| PathBuf::from(".")))
+            .join("mini-dbs")
+            .join("instances.json")
+    }
+
+    pub fn load() -> Self {
+        let path = Self::registry_path();
+        if let Ok(content) = fs::read_to_string(&path) {
+            serde_json::from_str(&content).unwrap_or_default()
+        } else {
+            Self::default()
+        }
+    }
+
+    pub fn register(&mut self, dir: &Path) -> Result<(), Box<dyn std::error::Error>> {
+        let canonical = dir.to_string_lossy().to_string();
+        if !self.instances.iter().any(|i| i.eq_ignore_ascii_case(&canonical)) {
+            self.instances.push(canonical);
+            self.save()?;
+        }
+        Ok(())
+    }
+
+    #[allow(dead_code)]
+    pub fn unregister(&mut self, dir: &Path) -> Result<(), Box<dyn std::error::Error>> {
+        let canonical = dir.to_string_lossy().to_string();
+        self.instances.retain(|i| !i.eq_ignore_ascii_case(&canonical));
+        self.save()?;
+        Ok(())
+    }
+
+    pub fn save(&self) -> Result<(), Box<dyn std::error::Error>> {
+        let path = Self::registry_path();
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        let json = serde_json::to_string_pretty(self)?;
+        fs::write(path, json)?;
+        Ok(())
+    }
+}

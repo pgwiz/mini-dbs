@@ -35,17 +35,17 @@ if ($Interactive -or [string]::IsNullOrWhiteSpace($InstallDir)) {
 
     # Location choice
     Write-Host "`nSelect Installation Location:" -ForegroundColor Cyan
-    Write-Host "  [1] Default: $env:USERPROFILE\.mini-dbs\postgres"
-    Write-Host "  [2] Current Directory: .\pgsql"
-    Write-Host "  [3] Custom Directory Path"
+    Write-Host "  [1] Default AppData: $env:LOCALAPPDATA\mini-dbs\postgres (Recommended)"
+    Write-Host "  [2] Current Directory: .\pgsql (Maintainable / Project-Local)"
+    Write-Host "  [3] Custom Maintainable Directory Path (e.g. D:\Databases)"
     $locChoice = Read-Host "Choose location [1-3] (Default: 1)"
     if ($locChoice -eq "2") {
         $InstallDir = Join-Path (Get-Location) "pgsql"
     } elseif ($locChoice -eq "3") {
         $customPath = Read-Host "Enter full directory path"
-        $InstallDir = if ($customPath) { $customPath } else { "$env:USERPROFILE\.mini-dbs\postgres" }
+        $InstallDir = if ($customPath) { $customPath } else { "$env:LOCALAPPDATA\mini-dbs\postgres" }
     } else {
-        $InstallDir = "$env:USERPROFILE\.mini-dbs\postgres"
+        $InstallDir = "$env:LOCALAPPDATA\mini-dbs\postgres"
     }
 
     # Version choice
@@ -85,7 +85,7 @@ if ($Interactive -or [string]::IsNullOrWhiteSpace($InstallDir)) {
 }
 
 if ([string]::IsNullOrWhiteSpace($InstallDir)) {
-    $InstallDir = "$env:USERPROFILE\.mini-dbs\postgres"
+    $InstallDir = "$env:LOCALAPPDATA\mini-dbs\postgres"
 }
 if ($Port -eq 0) {
     $Port = 5432

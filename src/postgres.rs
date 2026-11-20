@@ -10,9 +10,9 @@ use crate::downloader::{download_file, extract_zip};
 use crate::win_utils::{add_to_user_path, find_available_port, is_port_available};
 
 pub fn default_install_dir() -> PathBuf {
-    dirs::home_dir()
-        .unwrap_or_else(|| PathBuf::from("."))
-        .join(".mini-dbs")
+    dirs::data_local_dir()
+        .unwrap_or_else(|| dirs::home_dir().unwrap_or_else(|| PathBuf::from(".")))
+        .join("mini-dbs")
         .join("postgres")
 }
 
@@ -141,6 +141,10 @@ pub fn run_setup(opts: SetupOptions) -> Result<(), Box<dyn std::error::Error>> {
         installed_at: chrono_like_now(),
     };
     cfg.save(&opts.install_dir)?;
+
+    // Register instance in global registry
+    let mut reg = crate::config::InstanceRegistry::load();
+    let _ = reg.register(&opts.install_dir);
 
     // Generate start/stop/status batch shortcuts
     write_shortcuts(&opts.install_dir, &data_dir, target_port, &opts.username)?;

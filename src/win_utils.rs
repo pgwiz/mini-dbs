@@ -54,3 +54,83 @@ pub fn get_user_path() -> Result<String, Box<dyn std::error::Error>> {
     let current_path: String = env.get_value("Path").unwrap_or_default();
     Ok(current_path)
 }
+#[repr(C)]
+#[allow(non_snake_case)]
+struct ProcessMemoryCounters {
+    cb: u32,
+    PageFaultCount: u32,
+    PeakWorkingSetSize: usize,
+    WorkingSetSize: usize,
+    QuotaPeakPagedPoolUsage: usize,
+    QuotaPagedPoolUsage: usize,
+    QuotaPeakNonPagedPoolUsage: usize,
+    QuotaNonPagedPoolUsage: usize,
+    PagefileUsage: usize,
+    PeakPagefileUsage: usize,
+}
+
+extern "system" {
+    fn OpenProcess(dwDesiredAccess: u32, bInheritHandle: i32, dwProcessId: u32) -> *mut std::ffi::c_void;
+    fn CloseHandle(hObject: *mut std::ffi::c_void) -> i32;
+    fn K32GetProcessMemoryInfo(
+        hProcess: *mut std::ffi::c_void,
+        ppmc: *mut ProcessMemoryCounters,
+        cb: u32,
+    ) -> i32;
+    #[allow(dead_code)]
+    fn TerminateProcess(hProcess: *mut std::ffi::c_void, uExitCode: u32) -> i32;
+}
+
+const PROCESS_QUERY_INFORMATION: u32 = 0x0400;
+const PROCESS_VM_READ: u32 = 0x0010;
+#[allow(dead_code)]
+const PROCESS_TERMINATE: u32 = 0x0001;
+
+/// Query the working set memory usage in MB for a specific process ID
+pub fn get_process_memory_mb(pid: u32) -> Option<f64> {
+    unsafe {
+        let handle = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, 0, pid);
+        if handle.is_null() {
+            return None;
+        }
+
+        let mut pmc: ProcessMemoryCounters = std::mem::zeroed();
+        pmc.cb = std::mem::size_of::<ProcessMemoryCounters>() as u32;
+
+        let ok = K32GetProcessMemoryInfo(handle, &mut pmc, pmc.cb);
+        CloseHandle(handle);
+
+        if ok != 0 {
+            Some(pmc.WorkingSetSize as f64 / (1024.0 * 1024.0))
+        } else {
+            None
+        }
+    }
+}
+
+/// Check if a process with the given PID is actively running
+pub fn is_process_alive(pid: u32) -> bool {
+    unsafe {
+        let handle = OpenProcess(PROCESS_QUERY_INFORMATION, 0, pid);
+        if handle.is_null() {
+            false
+        } else {
+            CloseHandle(handle);
+            true
+        }
+    }
+}
+
+/// Forcibly terminate a process by PID
+#[allow(dead_code)]
+pub fn terminate_process_by_pid(pid: u32) -> bool {
+    unsafe {
+        let handle = OpenProcess(PROCESS_TERMINATE, 0, pid);
+        if handle.is_null() {
+            return false;
+        }
+        let res = TerminateProcess(handle, 1);
+        CloseHandle(handle);
+        res != 0
+    }
+}

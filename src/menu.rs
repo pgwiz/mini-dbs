@@ -18,10 +18,11 @@ pub fn run_interactive_menu() -> Result<(), Box<dyn std::error::Error>> {
         println!("  {} Add PostgreSQL to User PATH (Zero Elevation)", "[6]".green().bold());
         println!("  {} View Shell Environment Configuration (ps1/cmd)", "[7]".green().bold());
         println!("  {} Manage Extensions (List available or Install .zip)", "[8]".green().bold());
-        println!("  {} System Diagnostics & Active Ports", "[9]".green().bold());
+        println!("  {} Process Activity & RAM Monitor (Live Monitor, Stop All)", "[9]".green().bold());
+        println!("  {} System Diagnostics & Active Ports", "[10]".green().bold());
         println!("  {} Exit", "[0]".yellow());
         println!("{}", "----------------------------------------------------------".bright_black());
-        print!("Select an option [0-9]: ");
+        print!("Select an option [0-10]: ");
         io::stdout().flush()?;
 
         let mut choice = String::new();
@@ -37,12 +38,13 @@ pub fn run_interactive_menu() -> Result<(), Box<dyn std::error::Error>> {
             "6" => interactive_add_path()?,
             "7" => interactive_env()?,
             "8" => interactive_extensions()?,
-            "9" => interactive_diagnostics()?,
+            "9" => interactive_process_monitor()?,
+            "10" => interactive_diagnostics()?,
             "0" | "q" | "exit" => {
                 println!("Goodbye!");
                 break;
             }
-            _ => println!("{} Invalid option, please enter a number 0-9.", "[!]".red()),
+            _ => println!("{} Invalid option, please enter a number 0-10.", "[!]".red()),
         }
     }
     Ok(())
@@ -84,9 +86,9 @@ fn interactive_setup() -> Result<(), Box<dyn std::error::Error>> {
     println!("\nSpecify Installation Location:");
     let default_dir = postgres::default_install_dir();
     let default_dir_str = default_dir.to_string_lossy().to_string();
-    println!("  [1] User Home Directory ({})", default_dir_str.bright_black());
-    println!("  [2] Current Directory (.\\pgsql)");
-    println!("  [3] Custom Location (enter any full path)");
+    println!("  [1] Default AppData Destination ({})", default_dir_str.bright_black());
+    println!("  [2] Current Directory (.\\pgsql) - [Maintainable / Project-Local]");
+    println!("  [3] Custom Maintainable Folder (Choose your own folder, e.g. D:\\Databases)");
     let loc_choice = prompt("Choose location [1-3]", Some("1"))?;
     let install_dir: PathBuf = match loc_choice.as_str() {
         "2" => PathBuf::from(".\\pgsql"),
@@ -189,9 +191,9 @@ fn prompt_install_dir() -> Result<PathBuf, io::Error> {
     let default_dir = postgres::default_install_dir();
     let default_str = default_dir.to_string_lossy().to_string();
     println!("\nTarget Installation Location:");
-    println!("  [1] Default ({})", default_str.bright_black());
-    println!("  [2] Current Directory (.\\pgsql)");
-    println!("  [3] Custom Location");
+    println!("  [1] Default AppData ({})", default_str.bright_black());
+    println!("  [2] Current Directory (.\\pgsql) - [Maintainable / Project-Local]");
+    println!("  [3] Custom Maintainable Folder");
     let c = prompt("Select location [1-3]", Some("1"))?;
     let path = match c.as_str() {
         "2" => PathBuf::from(".\\pgsql"),
@@ -202,6 +204,20 @@ fn prompt_install_dir() -> Result<PathBuf, io::Error> {
         _ => default_dir,
     };
     Ok(path)
+}
+
+fn interactive_process_monitor() -> Result<(), Box<dyn std::error::Error>> {
+    println!("\nProcess Activity & Memory Supervisor:");
+    println!("  [1] Show process activity & RAM footprint table once");
+    println!("  [2] Launch live memory-efficient activity monitor (low CPU/RAM)");
+    println!("  [3] Stop ALL active database instances cleanly");
+    let c = prompt("Choose [1-3]", Some("1"))?;
+    match c.as_str() {
+        "2" => crate::monitor::run_live_monitor(2)?,
+        "3" => crate::monitor::stop_all_processes()?,
+        _ => crate::monitor::print_process_table(),
+    }
+    Ok(())
 }
 fn interactive_extensions() -> Result<(), Box<dyn std::error::Error>> {
     let loc = prompt_install_dir()?;

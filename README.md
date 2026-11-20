@@ -66,25 +66,41 @@ You will see the interactive wizard:
   [5] Open psql Interactive CLI Shell
   [6] Add PostgreSQL to User PATH (Zero Elevation)
   [7] View Shell Environment Configuration (ps1/cmd)
-  [8] System Diagnostics & Active Ports
+  [8] Manage Extensions (List available or Install .zip)
+  [9] Process Activity & RAM Monitor (Live Monitor, Stop All)
+  [10] System Diagnostics & Active Ports
   [0] Exit
 ----------------------------------------------------------
-Select an option [0-8]:
+Select an option [0-10]:
 ```
 
 #### 2. Headless / Automated CLI Setup
 ```powershell
-# Default user directory (~/.mini-dbs/postgres) on next available port:
+# Default AppData destination (%LOCALAPPDATA%\mini-dbs\postgres):
 mini-dbs pg setup
 
-# Specify custom project directory and port:
-mini-dbs pg setup --dir ".\my_db" --port 5434
+# Or specify your own maintainable custom directory (e.g. project-local or dedicated drive):
+mini-dbs pg setup --dir ".\pgsql" --port 5434
+mini-dbs pg setup --dir "D:\Databases\postgres" --port 5434
 
-# Automatically add binaries to User PATH:
+# Automatically add binaries to User PATH (zero admin):
 mini-dbs pg setup --add-to-path
 ```
 
-#### 3. Database Lifecycle Management
+#### 3. Memory-Efficient Process Activity & Supervisor
+`mini-dbs` includes an ultra-lightweight process supervisor (< 2 MB RAM, ~0.0% CPU) to inspect and manage running databases:
+```powershell
+# View instant process table with active PIDs, ports, and real-time RAM (Working Set):
+mini-dbs ps
+
+# Run live, continuous activity supervisor:
+mini-dbs top          # or: mini-dbs monitor
+
+# Stop all active database instances across all folders with 1 command:
+mini-dbs stop-all
+```
+
+#### 4. Database Lifecycle Management
 ```powershell
 # Start server in background
 mini-dbs pg start
